@@ -1,0 +1,72 @@
+Chrome extension to help find DOM-related vulnerabilities as a solo project. It is meant to be a 
+helper, not to find vulnerabilities on it's own. 
+
+The Idea:
+- I press a button in the chrome extension
+- The extension parses the DOM and opens a dialogue box for me.
+- I type in the name of a variable or element, and the extension looks for every instance of that element being called 
+  in the DOM and makes a little minified javascript version that only contains the edits to the element that i can easily parse.
+- Should work for minified JS
+
+For example after parsing a JS file, this would be the return:
+let x = {user_input}
+x += 5
+x = blah
+
+Then this lets me easily edit the value of x at the start and test different outputs of what x could return.
+
+The Plan:
+
+1. Obtain the current page's HTML
+
+2. look for all instances of an external script being loaded.
+
+3. Fetch the javascript contents of all the scripts being loaded from the context of the current browser (so no cors)
+
+4. Save the contents of each file into it's own array index
+
+5. Open a textbox for the user
+
+6. User types in the name of a variable
+
+6.5. Open an empty popup
+
+7. Use Acorn to parse each of the JS files into its own AST.
+
+8. Find all instances of that variable being used via acorn (acorn.walk). Paste all findings into the opened popup IN ORDER
+
+9. If a function is called in the page, identify the function being called via acorn and paste it's content into the resulting popup
+
+10. If any functions that are used and ARENT defined in the current page, then parse through all the dependency files to find it.
+
+11. If no function is found, error out.
+
+12. The popup should now contain all instances of that element/variable being changed or called in any way.
+
+Use Acorn (https://www.npmjs.com/package/acorn) or babel/parser (https://babeljs.io/docs/babel-parser) to build the javascript code into an AST
+
+Estree:
+A heirarchical structure similar to HTML. A Program node contains every single node parsed in the tree. Underneath that node contains
+numerous nodes classified based on what they do.
+
+Normal AST Stuff:
+Expression: Something which evaluates to a value. Example: 1+2/x
+Statement: A line of code which does something. Example: GOTO 100
+
+
+These statements and expressions are parsed into an AST containing numerous that build up the original program's functionality:
+VariableDeclaration - The declaration of a variable.
+                      Kind: defines how it was initialied (let, const, var)
+FunctionDeclaration - The declaration of a function.\
+                      Identifier: It's name, whether it is async or not, its parameters.
+                      BlockStatement: Everything that is inside of it's parenthesis.
+CallExpression - When a function is called.
+                 Callee: the identifier of the funcion being called.
+                 Arguments: The identifiers of the Arguments
+IfStatement - self-explanatory
+              BinaryExpression - contains the data types (Identifier/Literal) and operators
+
+ExpressionStatement - contains a full expression, dividing its process up inside of the statement.
+      AssignmentExpression - Assigning a value to something (x = 5)
+          Identifier - The name of a function/variable. Basically any pointer.
+          Literal - A solid, unchanging value like 5.
